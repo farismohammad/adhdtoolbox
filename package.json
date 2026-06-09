@@ -1,0 +1,15 @@
+{
+  "name": "adhdtoolbox",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "dev:web": "npm run dev --workspace web",
+    "dev:stack": "DEV_START_TTS=1 bash scripts/dev.sh",
+    "build:web": "npm run build --workspace web",
+    "lint:web": "npm run lint --workspace web",
+    "preview:web": "npm run preview --workspace web"
+  }
+}
