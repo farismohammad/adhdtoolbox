@@ -23,7 +23,8 @@ def _load_wav_with_stdlib(path: str | Path) -> tuple[torch.Tensor, int]:
             f"Unsupported WAV sample width for local reference audio: {sample_width * 8}-bit."
         )
 
-    waveform = torch.frombuffer(raw_frames, dtype=torch.int16).clone()
+    # torch.frombuffer warns on immutable bytes; copy into a writable buffer first.
+    waveform = torch.frombuffer(bytearray(raw_frames), dtype=torch.int16).clone()
     waveform = waveform.reshape(frame_count, channels).transpose(0, 1)
     waveform = waveform.to(dtype=torch.float32) / 32768.0
     return waveform, sample_rate

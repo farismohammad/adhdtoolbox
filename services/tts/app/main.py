@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,7 @@ DEFAULT_REFERENCE_AUDIO_PATH = REPO_ROOT / "voice.wav"
 DEFAULT_FALLBACK_VOICE = "Junhao"
 TTS_MODE = "moss-cli"
 DEFAULT_ALLOWED_ORIGIN_REGEX = r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"
+logger = logging.getLogger(__name__)
 
 load_dotenv(SERVICE_ROOT / ".env")
 
@@ -313,7 +315,15 @@ def synthesize_with_moss_cli(
         ) from exc
     except subprocess.CalledProcessError as exc:
         cleanup_file(output_path)
-        message = (exc.stderr or exc.stdout or "moss-tts-nano failed.").strip()
+        stdout = (exc.stdout or "").strip()
+        stderr = (exc.stderr or "").strip()
+        message = stderr or stdout or "moss-tts-nano failed."
+        logger.error(
+            "moss-tts-nano failed returncode=%s stdout=%s stderr=%s",
+            exc.returncode,
+            stdout or "<empty>",
+            stderr or "<empty>",
+        )
         raise HTTPException(status_code=503, detail=f"Local TTS failed: {message}") from exc
 
     if not output_path.exists():

@@ -37,3 +37,4 @@ services/tts/models/
 services/tts/generated_audio/
 services/tts/app/__pycache__/
 .playwright-mcp
+models.zip
