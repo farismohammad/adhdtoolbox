@@ -5,7 +5,7 @@ import { Textarea } from './Textarea'
 
 const DEFAULT_TEXT =
   'Paste text here. Generate local audio when you are ready to listen.'
-const TTS_API_URL = (import.meta.env.VITE_TTS_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+const TTS_API_URL = (import.meta.env.VITE_TTS_API_URL ?? '/api').replace(/\/$/, '')
 const LOCAL_TTS_TIMEOUT_MS = 130_000
 
 type LocalHealthStatus = 'checking' | 'online' | 'offline'
