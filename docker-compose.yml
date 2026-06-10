@@ -26,7 +26,5 @@ services:
     expose:
       - "8000"
     volumes:
-      - tts_models:/models
+      - /data/adhdtoolbox/tts-models:/models
 
-volumes:
-  tts_models:
