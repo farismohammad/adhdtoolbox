@@ -9,9 +9,6 @@ RUN npm ci
 FROM deps AS builder
 WORKDIR /app
 
-ARG VITE_TTS_API_URL=/api
-ENV VITE_TTS_API_URL=$VITE_TTS_API_URL
-
 COPY apps/web ./apps/web
 
 RUN npm run build --workspace web

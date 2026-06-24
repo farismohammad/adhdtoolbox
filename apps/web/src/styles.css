@@ -555,7 +555,8 @@ select.ui-input {
 .empty-state,
 .read-aloud-panel__health,
 .read-aloud-panel__audio,
-.read-aloud-panel__reference {
+.read-aloud-panel__reference,
+.read-aloud-panel__settings {
   border: 1px solid var(--border-soft);
   border-radius: 0.95rem;
   background: var(--surface-card);
@@ -571,7 +572,8 @@ select.ui-input {
 .empty-state,
 .read-aloud-panel__health,
 .read-aloud-panel__audio,
-.read-aloud-panel__reference {
+.read-aloud-panel__reference,
+.read-aloud-panel__settings {
   display: grid;
   gap: 0.7rem;
   padding: 0.88rem;
@@ -661,6 +663,7 @@ select.ui-input {
 .read-aloud-panel__health,
 .read-aloud-panel__audio,
 .read-aloud-panel__reference,
+.read-aloud-panel__settings,
 .summary-card,
 .tiny-todo-focus,
 .tiny-todo-list,
@@ -722,7 +725,8 @@ select.ui-input {
 .read-aloud-panel__health,
 .read-aloud-panel__audio,
 .read-aloud-panel__reference,
-.read-aloud-panel__empty-state {
+.read-aloud-panel__empty-state,
+.read-aloud-panel__settings {
   padding: 0.86rem 0.92rem;
 }
 
@@ -843,6 +847,12 @@ select.ui-input {
   gap: 0.55rem;
 }
 
+.read-aloud-panel__settings {
+  grid-template-columns: minmax(14rem, 1fr) minmax(8rem, 0.65fr) minmax(8rem, 0.65fr);
+  align-items: end;
+  gap: 0.9rem;
+}
+
 .read-aloud-panel__reference-meta,
 .summary-card__header,
 .summary-card__row,
@@ -874,6 +884,15 @@ select.ui-input {
 
 .read-aloud-panel__audio audio {
   width: 100%;
+}
+
+.read-aloud-panel__range-field {
+  min-width: 0;
+}
+
+.read-aloud-panel__range {
+  width: 100%;
+  accent-color: var(--accent-read-aloud);
 }
 
 .toggle-row {
@@ -1273,6 +1292,10 @@ select.ui-input {
   .read-aloud-panel__health {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .read-aloud-panel__settings {
+    grid-template-columns: 1fr;
   }
 
   .read-aloud-panel__editor .field {

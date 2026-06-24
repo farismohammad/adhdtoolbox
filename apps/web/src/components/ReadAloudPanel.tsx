@@ -3,180 +3,147 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from './Button'
 import { Textarea } from './Textarea'
 
-const DEFAULT_TEXT =
-  'Paste text here. Generate local audio when you are ready to listen.'
-const TTS_API_URL = (import.meta.env.VITE_TTS_API_URL ?? '/api').replace(/\/$/, '')
-const LOCAL_TTS_TIMEOUT_MS = 130_000
+const DEFAULT_TEXT = 'Paste text here, then press Play to hear it aloud.'
 
-type LocalHealthStatus = 'checking' | 'online' | 'offline'
+type SpeechStatus = 'ready' | 'speaking' | 'paused' | 'stopped' | 'unsupported'
 
-type HealthResponse = {
-  status: string
-  engine: string
-  mode: string
-  reference_audio?: string | null
-  detail?: string | null
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return 'Something went wrong.'
+function isSpeechSynthesisSupported() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
 }
 
 export function ReadAloudPanel() {
   const [text, setText] = useState(DEFAULT_TEXT)
-  const [localHealth, setLocalHealth] = useState<LocalHealthStatus>('checking')
-  const [localHealthMessage, setLocalHealthMessage] = useState('')
-  const [localAudioUrl, setLocalAudioUrl] = useState('')
-  const [localAudioLabel, setLocalAudioLabel] = useState('')
-  const [localError, setLocalError] = useState('')
-  const [isGeneratingLocalAudio, setIsGeneratingLocalAudio] = useState(false)
-  const localAudioUrlRef = useRef('')
+  const [isSupported] = useState(isSpeechSynthesisSupported)
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [selectedVoiceUri, setSelectedVoiceUri] = useState('')
+  const [rate, setRate] = useState(1)
+  const [pitch, setPitch] = useState(1)
+  const [status, setStatus] = useState<SpeechStatus>(isSupported ? 'ready' : 'unsupported')
+  const [message, setMessage] = useState(
+    isSupported
+      ? 'Text is spoken using your browser’s built-in voice engine. Audio is generated on your device, not on the server.'
+      : 'Browser TTS is not supported in this browser.',
+  )
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const cleanedText = text.trim()
 
-  const clearLocalAudio = useCallback(() => {
-    if (localAudioUrlRef.current) {
-      URL.revokeObjectURL(localAudioUrlRef.current)
-      localAudioUrlRef.current = ''
-    }
-
-    setLocalAudioUrl('')
-    setLocalAudioLabel('')
-  }, [])
-
-  const checkLocalHealth = useCallback(async (signal?: AbortSignal) => {
-    setLocalHealth('checking')
-    setLocalHealthMessage('')
-
-    try {
-      const response = await fetch(`${TTS_API_URL}/health`, { signal })
-      if (!response.ok) {
-        throw new Error(`Health check failed with ${response.status}.`)
-      }
-
-      const health = (await response.json()) as HealthResponse
-      if (health.status !== 'ok') {
-        setLocalHealth('offline')
-        setLocalHealthMessage(health.detail ?? 'Local moss-tts is not ready.')
-        return
-      }
-
-      setLocalHealth('online')
-      setLocalHealthMessage(
-        `TTS is online.`,
-      )
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return
-      }
-
-      setLocalHealth('offline')
-      setLocalHealthMessage('Local moss-tts is offline.')
-    }
-  }, [])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    void checkLocalHealth(controller.signal)
-
-    return () => controller.abort()
-  }, [checkLocalHealth])
-
-  useEffect(() => clearLocalAudio, [clearLocalAudio])
-
-  function clearText() {
-    clearLocalAudio()
-    setText('')
-    setLocalError('')
-  }
-
-  async function generateLocalAudio() {
-    setLocalError('')
-    clearLocalAudio()
-
-    if (!cleanedText) {
-      setLocalError('Add text before generating local speech.')
+  const updateVoices = useCallback(() => {
+    if (!isSpeechSynthesisSupported()) {
       return
     }
 
-    setIsGeneratingLocalAudio(true)
+    const availableVoices = window.speechSynthesis.getVoices()
+    setVoices(availableVoices)
+    setSelectedVoiceUri((currentVoiceUri) =>
+      availableVoices.some((voice) => voice.voiceURI === currentVoiceUri) ? currentVoiceUri : '',
+    )
+  }, [])
 
-    try {
-      const controller = new AbortController()
-      const timeoutId = window.setTimeout(() => controller.abort(), LOCAL_TTS_TIMEOUT_MS)
-      let response: Response
-      try {
-        response = await fetch(`${TTS_API_URL}/tts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal,
-          body: JSON.stringify({
-            text: cleanedText,
-          }),
-        })
-      } finally {
-        window.clearTimeout(timeoutId)
-      }
-
-      if (!response.ok) {
-        let message = `Local TTS failed with ${response.status}.`
-
-        try {
-          const payload = (await response.json()) as { detail?: string | Array<{ msg?: string }> }
-          if (typeof payload.detail === 'string') {
-            message = payload.detail
-          } else if (Array.isArray(payload.detail) && payload.detail[0]?.msg) {
-            message = payload.detail[0].msg
-          }
-        } catch {
-          // Keep the status-based message when the backend does not return JSON.
-        }
-
-        throw new Error(message)
-      }
-
-      const audioBlob = await response.blob()
-      const nextAudioUrl = URL.createObjectURL(audioBlob)
-      localAudioUrlRef.current = nextAudioUrl
-      setLocalAudioUrl(nextAudioUrl)
-      setLocalAudioLabel(`Generated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`)
-      setLocalHealth('online')
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setLocalError(`Local TTS timed out after ${Math.floor(LOCAL_TTS_TIMEOUT_MS / 1000)} seconds.`)
-        setLocalHealth('offline')
-        return
-      }
-      setLocalError(getErrorMessage(error))
-      setLocalHealth('offline')
-    } finally {
-      setIsGeneratingLocalAudio(false)
+  useEffect(() => {
+    if (!isSupported) {
+      return
     }
+
+    const speechSynthesis = window.speechSynthesis
+    updateVoices()
+    speechSynthesis.addEventListener('voiceschanged', updateVoices)
+
+    return () => {
+      speechSynthesis.removeEventListener('voiceschanged', updateVoices)
+      utteranceRef.current = null
+      speechSynthesis.cancel()
+    }
+  }, [isSupported, updateVoices])
+
+  const stop = useCallback(() => {
+    if (!isSupported) {
+      return
+    }
+
+    utteranceRef.current = null
+    window.speechSynthesis.cancel()
+    setStatus('stopped')
+    setMessage('Speech stopped.')
+  }, [isSupported])
+
+  function play() {
+    if (!isSupported || !cleanedText) {
+      return
+    }
+
+    const speechSynthesis = window.speechSynthesis
+    const utterance = new SpeechSynthesisUtterance(cleanedText)
+    const selectedVoice = voices.find((voice) => voice.voiceURI === selectedVoiceUri)
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice
+    }
+
+    utterance.rate = rate
+    utterance.pitch = pitch
+    utterance.onstart = () => {
+      if (utteranceRef.current === utterance) {
+        setStatus('speaking')
+        setMessage('Speaking text on this device.')
+      }
+    }
+    utterance.onend = () => {
+      if (utteranceRef.current === utterance) {
+        utteranceRef.current = null
+        setStatus('ready')
+        setMessage('Finished speaking.')
+      }
+    }
+    utterance.onerror = (event) => {
+      if (utteranceRef.current === utterance && event.error !== 'canceled' && event.error !== 'interrupted') {
+        utteranceRef.current = null
+        setStatus('ready')
+        setMessage('The browser could not speak this text. Try a different voice.')
+      }
+    }
+
+    speechSynthesis.cancel()
+    utteranceRef.current = utterance
+    setStatus('speaking')
+    setMessage('Starting speech on this device.')
+    speechSynthesis.speak(utterance)
+  }
+
+  function pause() {
+    if (!isSupported || status !== 'speaking') {
+      return
+    }
+
+    window.speechSynthesis.pause()
+    setStatus('paused')
+    setMessage('Speech paused.')
+  }
+
+  function resume() {
+    if (!isSupported || status !== 'paused') {
+      return
+    }
+
+    window.speechSynthesis.resume()
+    setStatus('speaking')
+    setMessage('Speech resumed.')
+  }
+
+  function clearText() {
+    stop()
+    setText('')
   }
 
   return (
     <div className="read-aloud-panel section-stack">
-      <div className="read-aloud-panel__topbar">
-        <div
-          className={`read-aloud-panel__health read-aloud-panel__health--${localHealth} tool-card`}
-          aria-live="polite"
-        >
-          <span className="read-aloud-panel__health-badge">
-            {localHealth === 'checking'
-              ? 'Checking backend'
-              : localHealth === 'online'
-                ? 'Backend online'
-                : 'Backend offline'}
-          </span>
-          <p>{localHealthMessage || 'Uses the local moss-tts service at the configured API URL.'}</p>
-        </div>
-
-
+      <div
+        className={`read-aloud-panel__health read-aloud-panel__health--${status === 'unsupported' ? 'offline' : 'online'} tool-card`}
+        aria-live="polite"
+      >
+        <span className="read-aloud-panel__health-badge">
+          {status === 'unsupported' ? 'Unavailable' : status === 'speaking' ? 'Speaking' : status === 'paused' ? 'Paused' : 'Browser TTS'}
+        </span>
+        <p>{message}</p>
       </div>
 
       <div className="read-aloud-panel__editor">
@@ -190,40 +157,78 @@ export function ReadAloudPanel() {
       </div>
 
       <div className="read-aloud-panel__footer">
-        <div className="control-row tool-control-row read-aloud-panel__controls" aria-label="Local speech controls">
+        <div className="read-aloud-panel__settings tool-card">
+          <label className="field">
+            <span className="field__label">Voice</span>
+            <select
+              aria-label="Voice"
+              className="ui-input"
+              disabled={!isSupported}
+              onChange={(event) => setSelectedVoiceUri(event.target.value)}
+              value={selectedVoiceUri}
+            >
+              <option value="">Browser default voice</option>
+              {voices.map((voice) => (
+                <option key={voice.voiceURI} value={voice.voiceURI}>
+                  {voice.name} ({voice.lang})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field read-aloud-panel__range-field">
+            <span className="field__label">Rate: {rate.toFixed(1)}×</span>
+            <input
+              aria-label="Speech rate"
+              className="read-aloud-panel__range"
+              disabled={!isSupported}
+              max="2"
+              min="0.5"
+              onChange={(event) => setRate(Number(event.target.value))}
+              step="0.1"
+              type="range"
+              value={rate}
+            />
+          </label>
+
+          <label className="field read-aloud-panel__range-field">
+            <span className="field__label">Pitch: {pitch.toFixed(1)}</span>
+            <input
+              aria-label="Speech pitch"
+              className="read-aloud-panel__range"
+              disabled={!isSupported}
+              max="2"
+              min="0"
+              onChange={(event) => setPitch(Number(event.target.value))}
+              step="0.1"
+              type="range"
+              value={pitch}
+            />
+          </label>
+        </div>
+
+        <div className="control-row tool-control-row read-aloud-panel__controls" aria-label="Speech controls">
           <Button
             className="read-aloud-panel__primary-action"
-            disabled={!cleanedText || isGeneratingLocalAudio}
-            onClick={generateLocalAudio}
+            disabled={!isSupported || !cleanedText}
+            onClick={play}
             variant="primary"
           >
-            {isGeneratingLocalAudio ? 'Generating' : 'Generate WAV'}
+            Play
           </Button>
-          <Button disabled={isGeneratingLocalAudio} onClick={() => void checkLocalHealth()}>
-            Check backend
+          <Button disabled={!isSupported || status !== 'speaking'} onClick={pause}>
+            Pause
           </Button>
-          <Button disabled={!text && !localAudioUrl} onClick={clearText}>
+          <Button disabled={!isSupported || status !== 'paused'} onClick={resume}>
+            Resume
+          </Button>
+          <Button disabled={!isSupported || (status !== 'speaking' && status !== 'paused')} onClick={stop}>
+            Stop
+          </Button>
+          <Button disabled={!text} onClick={clearText}>
             Clear
           </Button>
         </div>
-
-        {localError ? (
-          <p className="read-aloud-panel__error" role="alert">
-            {localError}
-          </p>
-        ) : null}
-
-        {localAudioUrl ? (
-          <div className="read-aloud-panel__audio tool-card">
-            <span>{localAudioLabel}</span>
-            <audio controls src={localAudioUrl} />
-          </div>
-        ) : (
-          <div className="empty-state read-aloud-panel__empty-state tool-card">
-            <strong>No local audio generated yet.</strong>
-            <p>Start the FastAPI service to create a local WAV.</p>
-          </div>
-        )}
       </div>
     </div>
   )

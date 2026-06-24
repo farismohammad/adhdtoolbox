@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "bash scripts/dev.sh",
     "dev:web": "npm run dev --workspace web",
-    "dev:stack": "DEV_START_TTS=1 bash scripts/dev.sh",
     "build": "npm run build --workspace web",
     "build:web": "npm run build --workspace web",
     "start": "npm run start --workspace web",
