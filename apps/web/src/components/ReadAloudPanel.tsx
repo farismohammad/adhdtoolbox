@@ -4,11 +4,20 @@ import { Button } from './Button'
 import { Textarea } from './Textarea'
 
 const DEFAULT_TEXT = 'Paste text here, then press Play to hear it aloud.'
+const SUPPORTED_VOICES = [
+  { name: 'Daniel', lang: 'en-GB' },
+  { name: 'Samantha', lang: 'en-US' },
+  { name: 'Karen', lang: 'en-AU' },
+] as const
 
 type SpeechStatus = 'ready' | 'speaking' | 'paused' | 'stopped' | 'unsupported'
 
 function isSpeechSynthesisSupported() {
   return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+}
+
+function isSupportedVoice(voice: SpeechSynthesisVoice) {
+  return SUPPORTED_VOICES.some(({ name, lang }) => voice.name === name && voice.lang === lang)
 }
 
 export function ReadAloudPanel() {
@@ -32,10 +41,12 @@ export function ReadAloudPanel() {
       return
     }
 
-    const availableVoices = window.speechSynthesis.getVoices()
+    const availableVoices = window.speechSynthesis.getVoices().filter(isSupportedVoice)
     setVoices(availableVoices)
     setSelectedVoiceUri((currentVoiceUri) =>
-      availableVoices.some((voice) => voice.voiceURI === currentVoiceUri) ? currentVoiceUri : '',
+      availableVoices.some((voice) => voice.voiceURI === currentVoiceUri)
+        ? currentVoiceUri
+        : (availableVoices[0]?.voiceURI ?? ''),
     )
   }, [])
 
@@ -75,9 +86,12 @@ export function ReadAloudPanel() {
     const utterance = new SpeechSynthesisUtterance(cleanedText)
     const selectedVoice = voices.find((voice) => voice.voiceURI === selectedVoiceUri)
 
-    if (selectedVoice) {
-      utterance.voice = selectedVoice
+    if (!selectedVoice) {
+      setMessage('None of the supported voices are installed in this browser.')
+      return
     }
+
+    utterance.voice = selectedVoice
 
     utterance.rate = rate
     utterance.pitch = pitch
@@ -167,7 +181,7 @@ export function ReadAloudPanel() {
               onChange={(event) => setSelectedVoiceUri(event.target.value)}
               value={selectedVoiceUri}
             >
-              <option value="">Browser default voice</option>
+              {voices.length === 0 && <option value="">No supported voices installed</option>}
               {voices.map((voice) => (
                 <option key={voice.voiceURI} value={voice.voiceURI}>
                   {voice.name} ({voice.lang})
@@ -210,7 +224,7 @@ export function ReadAloudPanel() {
         <div className="control-row tool-control-row read-aloud-panel__controls" aria-label="Speech controls">
           <Button
             className="read-aloud-panel__primary-action"
-            disabled={!isSupported || !cleanedText}
+            disabled={!isSupported || !cleanedText || !selectedVoiceUri}
             onClick={play}
             variant="primary"
           >
