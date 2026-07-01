@@ -29,7 +29,7 @@ export const toolDefinitions: ToolDefinition[] = [
     id: 'tiny-todo',
     name: 'Tiny Todo',
     selectorLabel: 'Capture one task',
-    summary: 'Write one tiny next step.',
+    summary: 'Make it small enough to start.',
     accent: 'teal',
   },
   {

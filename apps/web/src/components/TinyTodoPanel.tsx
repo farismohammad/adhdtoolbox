@@ -51,10 +51,10 @@ export function TinyTodoPanel() {
     <div className="tiny-todo-panel section-stack">
       <div className="tiny-todo-panel__composer">
         <Input
-          label="Task"
+          label="Next step"
           onChange={(event) => setTitleInput(event.target.value)}
           onKeyDown={handleTaskInputKeyDown}
-          placeholder="Break the next step into one small action"
+          placeholder="What’s one tiny thing you can do next?"
           value={titleInput}
         />
 
@@ -79,8 +79,8 @@ export function TinyTodoPanel() {
         <div className="tiny-todo-focus focused-task-card section-stack" aria-live="polite">
           <div className="tiny-todo-focus__header">
             <div>
-              <span className="tiny-todo-focus__eyebrow">Focused task</span>
-              <strong>{activeTask?.title ?? 'No active task yet'}</strong>
+              <span className="tiny-todo-focus__eyebrow">Now focusing</span>
+              <strong>{activeTask?.title ?? 'Nothing running yet'}</strong>
             </div>
 
             {activeTask?.durationMinutes ? (
@@ -95,7 +95,7 @@ export function TinyTodoPanel() {
               onChange={(event) => toggleSoundWhenDone(event.target.checked)}
               type="checkbox"
             />
-            <span>Play sound when done</span>
+            <span>Chime when done</span>
           </label>
 
           {activeTask ? (
@@ -143,23 +143,23 @@ export function TinyTodoPanel() {
             )
           ) : (
             <div className="empty-state">
-              <strong>Start one task to focus it here.</strong>
-              <p>The task list stays saved in this browser, but active timers do not survive refresh.</p>
+              <strong>Start a task to focus here.</strong>
+              <p>Your list is saved in this browser. Timers reset on refresh.</p>
             </div>
           )}
         </div>
 
         <div className="tiny-todo-list task-list-card section-stack">
           <div className="tiny-todo-list__header task-list-header">
-            <strong>Task list</strong>
+            <strong>Up next</strong>
             <Button disabled={!hasCompletedTasks} onClick={clearCompleted}>
-              Clear completed
+              Clear done
             </Button>
           </div>
 
           <div className="tiny-todo-list__body task-list-body">
             {tasks.length ? (
-              <ul className="task-list" aria-label="Tasks">
+              <ul className="task-list" aria-label="Up next">
                 {tasks.map((task) => {
                   const isActiveTask = activeTask?.id === task.id
 
@@ -188,9 +188,9 @@ export function TinyTodoPanel() {
 
                       <div className="task-row__actions">
                         <Button disabled={task.completed} onClick={() => startTask(task)} variant="primary">
-                          Start
+                          Focus
                         </Button>
-                        <Button onClick={() => deleteTask(task.id)}>Delete</Button>
+                        <Button onClick={() => deleteTask(task.id)}>Remove</Button>
                       </div>
                     </li>
                   )
