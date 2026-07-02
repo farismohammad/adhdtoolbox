@@ -2,7 +2,6 @@ import type { KeyboardEvent } from 'react'
 
 import { FOCUS_TIMER_PRESETS, useCountdownTimer } from '../hooks/useCountdownTimer'
 import { Button } from './Button'
-import { Input } from './Input'
 
 export function FocusTimerPanel() {
   const {
@@ -62,35 +61,6 @@ export function FocusTimerPanel() {
             ))}
           </div>
 
-          <div className="focus-timer-panel__sidebar section-stack tool-input-group">
-            <Input
-              inputMode="numeric"
-              label="Custom minutes"
-              min={1}
-              onBlur={commitCustomMinutes}
-              onChange={(event) => setCustomMinutesInput(event.target.value)}
-              onKeyDown={handleCustomMinutesEnter}
-              pattern="[0-9]*"
-              placeholder="30"
-              value={customMinutesInput}
-            />
-
-            <label className="toggle-row">
-              <input
-                checked={soundEnabled}
-                className="toggle-row__checkbox"
-                onChange={(event) => toggleSound(event.target.checked)}
-                type="checkbox"
-              />
-              <span>Play gentle sound on complete</span>
-            </label>
-
-            <p className="focus-timer-panel__meta">
-              Selected duration is saved in this browser. Sound stays off unless you switch it on
-              for this session.
-            </p>
-          </div>
-
           <div className="control-row tool-control-row focus-timer-panel__actions" aria-label="Timer controls">
             <Button disabled={!canStart} onClick={start} variant="primary">
               Start
@@ -108,6 +78,38 @@ export function FocusTimerPanel() {
             <Button disabled={!canStop} onClick={stop}>
               Stop
             </Button>
+          </div>
+
+          <div className="focus-timer-panel__sidebar section-stack tool-input-group">
+            <label className="field">
+              <span className="field__label">Custom minutes</span>
+              <input
+                className="ui-input"
+                inputMode="numeric"
+                min={1}
+                onBlur={commitCustomMinutes}
+                onChange={(event) => setCustomMinutesInput(event.target.value)}
+                onKeyDown={handleCustomMinutesEnter}
+                pattern="[0-9]*"
+                placeholder="30"
+                value={customMinutesInput}
+              />
+            </label>
+
+            <label className="toggle-row">
+              <input
+                checked={soundEnabled}
+                className="toggle-row__checkbox"
+                onChange={(event) => toggleSound(event.target.checked)}
+                type="checkbox"
+              />
+              <span>Play gentle sound on complete</span>
+            </label>
+
+            <p className="focus-timer-panel__meta">
+              Selected duration is saved in this browser. Sound stays off unless you switch it on
+              for this session.
+            </p>
           </div>
         </div>
       </div>

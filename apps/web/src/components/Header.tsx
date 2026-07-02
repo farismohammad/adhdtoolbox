@@ -1,10 +1,4 @@
-import type { ReactNode } from 'react'
-
-type HeaderProps = {
-  actions?: ReactNode
-}
-
-export function Header({ actions }: HeaderProps) {
+export function Header() {
   return (
     <header className="site-header">
       <div className="page-frame site-header__inner">
@@ -13,7 +7,12 @@ export function Header({ actions }: HeaderProps) {
           <span className="brand-mark__meta">Quick tools. No account. Private by default.</span>
         </a>
 
-        {actions ? <div className="site-header__actions">{actions}</div> : null}
+        <details className="privacy-note">
+          <summary>Privacy</summary>
+          <p>
+            Private by default. Tasks, timers, and pasted text stay in your browser.
+          </p>
+        </details>
       </div>
     </header>
   )

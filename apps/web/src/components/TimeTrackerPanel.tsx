@@ -1,7 +1,6 @@
 import { clipDurationToLocalDay, formatLocalDayDuration } from '../time'
 import { TIME_TRACKER_QUICK_LABELS, useTimeTracker, type TimeSession } from '../hooks/useTimeTracker'
 import { Button } from './Button'
-import { Input } from './Input'
 
 function getSessionDurationForToday(session: TimeSession, nowMs: number) {
   const startedAtMs = new Date(session.startedAt).getTime()
@@ -51,12 +50,15 @@ export function TimeTrackerPanel() {
   return (
     <div className="time-tracker-panel section-stack">
       <div className="time-tracker-panel__composer section-stack tool-input-group">
-        <Input
-          label="Optional label"
-          onChange={(event) => setLabelInput(event.target.value)}
-          placeholder="What are you about to spend time on?"
-          value={labelInput}
-        />
+        <label className="field">
+          <span className="field__label">Optional label</span>
+          <input
+            className="ui-input"
+            onChange={(event) => setLabelInput(event.target.value)}
+            placeholder="What are you about to spend time on?"
+            value={labelInput}
+          />
+        </label>
 
         <div className="control-row tool-control-row time-tracker-panel__controls" aria-label="Quick labels">
           {TIME_TRACKER_QUICK_LABELS.map((label) => (

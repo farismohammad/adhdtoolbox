@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { readLocalStorageJSON, writeLocalStorageJSON } from '../browserStorage'
 
@@ -11,14 +11,6 @@ export type TimeSession = {
   label?: string
   startedAt: string
   endedAt?: string
-}
-
-function createId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-
-  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function isTimeSession(value: unknown): value is TimeSession {
@@ -51,17 +43,7 @@ export function useTimeTracker() {
     writeLocalStorageJSON(STORAGE_KEY, sessions)
   }, [sessions])
 
-  const activeSession = useMemo(() => {
-    for (let index = sessions.length - 1; index >= 0; index -= 1) {
-      const session = sessions[index]
-
-      if (session.endedAt === undefined) {
-        return session
-      }
-    }
-
-    return null
-  }, [sessions])
+  const activeSession = sessions.find((session) => session.endedAt === undefined) ?? null
 
   useEffect(() => {
     if (!activeSession) {
@@ -87,7 +69,7 @@ export function useTimeTracker() {
     setNowMs(Date.now())
     setSessions((currentSessions) => [
       {
-        id: createId(),
+        id: crypto.randomUUID(),
         label,
         startedAt: new Date().toISOString(),
       },

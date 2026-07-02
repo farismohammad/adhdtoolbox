@@ -2,7 +2,6 @@ import type { KeyboardEvent } from 'react'
 
 import { TINY_TODO_PRESETS, useTinyTodo } from '../hooks/useTinyTodo'
 import { Button } from './Button'
-import { Input } from './Input'
 
 export function TinyTodoPanel() {
   const {
@@ -50,13 +49,16 @@ export function TinyTodoPanel() {
   return (
     <div className="tiny-todo-panel section-stack">
       <div className="tiny-todo-panel__composer">
-        <Input
-          label="Next step"
-          onChange={(event) => setTitleInput(event.target.value)}
-          onKeyDown={handleTaskInputKeyDown}
-          placeholder="What’s one tiny thing you can do next?"
-          value={titleInput}
-        />
+        <label className="field">
+          <span className="field__label">Next step</span>
+          <input
+            className="ui-input"
+            onChange={(event) => setTitleInput(event.target.value)}
+            onKeyDown={handleTaskInputKeyDown}
+            placeholder="What’s one tiny thing you can do next?"
+            value={titleInput}
+          />
+        </label>
 
         <div className="control-row" aria-label="Suggested task lengths">
           {TINY_TODO_PRESETS.map((minutes) => (

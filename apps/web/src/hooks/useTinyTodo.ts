@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { readLocalStorageJSON, writeLocalStorageJSON } from '../browserStorage'
 import { useCountdown, type TimerStatus } from './useCountdown'
@@ -18,14 +18,6 @@ export type Task = {
   completed: boolean
   createdAt: string
   completedAt?: string
-}
-
-function createId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-
-  return `task-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function isTask(value: unknown): value is Task {
@@ -87,10 +79,7 @@ export function useTinyTodo() {
     writeLocalStorageJSON(SOUND_STORAGE_KEY, soundEnabled)
   }, [soundEnabled])
 
-  const activeTask = useMemo(
-    () => tasks.find((task) => task.id === activeTaskId) ?? null,
-    [activeTaskId, tasks],
-  )
+  const activeTask = tasks.find((task) => task.id === activeTaskId) ?? null
   const activeTaskDurationMs = activeTask?.durationMinutes
     ? activeTask.durationMinutes * ONE_MINUTE_MS
     : null
@@ -116,7 +105,7 @@ export function useTinyTodo() {
     }
 
     const newTask: Task = {
-      id: createId(),
+      id: crypto.randomUUID(),
       title,
       durationMinutes: selectedDurationMinutes ?? undefined,
       completed: false,

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from './Button'
-import { Textarea } from './Textarea'
 
 const DEFAULT_TEXT = 'Paste text here, then press Play to hear it aloud.'
 const SUPPORTED_VOICES = [
@@ -36,26 +35,23 @@ export function ReadAloudPanel() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const cleanedText = text.trim()
 
-  const updateVoices = useCallback(() => {
-    if (!isSpeechSynthesisSupported()) {
-      return
-    }
-
-    const availableVoices = window.speechSynthesis.getVoices().filter(isSupportedVoice)
-    setVoices(availableVoices)
-    setSelectedVoiceUri((currentVoiceUri) =>
-      availableVoices.some((voice) => voice.voiceURI === currentVoiceUri)
-        ? currentVoiceUri
-        : (availableVoices[0]?.voiceURI ?? ''),
-    )
-  }, [])
-
   useEffect(() => {
     if (!isSupported) {
       return
     }
 
     const speechSynthesis = window.speechSynthesis
+
+    function updateVoices() {
+      const availableVoices = speechSynthesis.getVoices().filter(isSupportedVoice)
+      setVoices(availableVoices)
+      setSelectedVoiceUri((currentVoiceUri) =>
+        availableVoices.some((voice) => voice.voiceURI === currentVoiceUri)
+          ? currentVoiceUri
+          : (availableVoices[0]?.voiceURI ?? ''),
+      )
+    }
+
     updateVoices()
     speechSynthesis.addEventListener('voiceschanged', updateVoices)
 
@@ -64,9 +60,9 @@ export function ReadAloudPanel() {
       utteranceRef.current = null
       speechSynthesis.cancel()
     }
-  }, [isSupported, updateVoices])
+  }, [isSupported])
 
-  const stop = useCallback(() => {
+  function stop() {
     if (!isSupported) {
       return
     }
@@ -75,7 +71,7 @@ export function ReadAloudPanel() {
     window.speechSynthesis.cancel()
     setStatus('stopped')
     setMessage('Speech stopped.')
-  }, [isSupported])
+  }
 
   function play() {
     if (!isSupported || !cleanedText) {
@@ -161,13 +157,15 @@ export function ReadAloudPanel() {
       </div>
 
       <div className="read-aloud-panel__editor">
-        <Textarea
-          className="read-aloud-panel__textarea"
-          label="Text to read"
-          onChange={(event) => setText(event.target.value)}
-          rows={7}
-          value={text}
-        />
+        <label className="field">
+          <span className="field__label">Text to read</span>
+          <textarea
+            className="ui-input ui-textarea read-aloud-panel__textarea"
+            onChange={(event) => setText(event.target.value)}
+            rows={7}
+            value={text}
+          />
+        </label>
       </div>
 
       <div className="read-aloud-panel__footer">
