@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
+import { readLocalStorageJSON, writeLocalStorageJSON } from './browserStorage'
 import { FocusTimerPanel } from './components/FocusTimerPanel'
 import { Header } from './components/Header'
 import { ReadAloudPanel } from './components/ReadAloudPanel'
@@ -7,7 +8,9 @@ import { TimeTrackerPanel } from './components/TimeTrackerPanel'
 import { TinyTodoPanel } from './components/TinyTodoPanel'
 
 const DEFAULT_TOOL: ToolId = 'focus-timer'
+const READING_COMFORT_STORAGE_KEY = 'adhdtoolbox.readingComfort'
 
+type ReadingComfort = 'standard' | 'comfort' | 'hyperlegible' | 'dyslexia'
 type ToolId = 'read-aloud' | 'focus-timer' | 'tiny-todo' | 'time-tracker'
 type ToolAccent = 'mauve' | 'blue' | 'teal' | 'peach'
 type ToolDefinition = {
@@ -48,6 +51,30 @@ const toolDefinitions: ToolDefinition[] = [
     accent: 'peach',
   },
 ]
+
+const readingComfortOptions: Array<{ id: ReadingComfort; label: string }> = [
+  { id: 'standard', label: 'Standard' },
+  { id: 'comfort', label: 'Comfort' },
+  { id: 'hyperlegible', label: 'Hyperlegible' },
+  { id: 'dyslexia', label: 'Dyslexia' },
+]
+
+function isReadingComfort(value: unknown): value is ReadingComfort {
+  return (
+    value === 'standard' ||
+    value === 'comfort' ||
+    value === 'hyperlegible' ||
+    value === 'dyslexia'
+  )
+}
+
+function getInitialReadingComfort() {
+  return readLocalStorageJSON<ReadingComfort>(
+    READING_COMFORT_STORAGE_KEY,
+    'standard',
+    isReadingComfort,
+  )
+}
 
 function renderToolPanel(toolId: ToolId) {
   switch (toolId) {
@@ -129,12 +156,55 @@ function ActiveToolPanel({ selectedTool, tools }: ActiveToolPanelProps) {
   )
 }
 
+type ReadingComfortSelectorProps = {
+  value: ReadingComfort
+  onChange: (nextValue: ReadingComfort) => void
+}
+
+function ReadingComfortSelector({ value, onChange }: ReadingComfortSelectorProps) {
+  return (
+    <label className="reading-comfort">
+      <span>Reading comfort</span>
+      <select
+        aria-label="Reading comfort"
+        className="ui-input reading-comfort__select"
+        onChange={(event) => {
+          const nextValue = event.target.value
+
+          if (isReadingComfort(nextValue)) {
+            onChange(nextValue)
+          }
+        }}
+        value={value}
+      >
+        {readingComfortOptions.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 export default function App() {
   const [selectedTool, setSelectedTool] = useState<ToolId>(DEFAULT_TOOL)
+  const [readingComfort, setReadingComfort] = useState(getInitialReadingComfort)
+
+  useEffect(() => {
+    writeLocalStorageJSON(READING_COMFORT_STORAGE_KEY, readingComfort)
+  }, [readingComfort])
 
   return (
-    <div className="app-shell" id="top">
-      <Header />
+    <div className={`app-shell reading-comfort--${readingComfort}`} id="top">
+      <Header
+        actions={
+          <ReadingComfortSelector
+            onChange={setReadingComfort}
+            value={readingComfort}
+          />
+        }
+      />
       <main className="page-frame app-main">
         <aside className="tool-picker" aria-labelledby="tool-picker-title">
           <div className="tool-picker__intro">

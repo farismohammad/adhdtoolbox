@@ -11,6 +11,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "open-dyslexic": "^1.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

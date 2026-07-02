@@ -137,6 +137,8 @@ body,
 }
 
 .app-shell {
+  --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-font-size: 16px;
   --app-line-height: 1.6;
   --app-gap: 1rem;
 
@@ -147,9 +149,24 @@ body,
   min-height: 100dvh;
   overflow: clip;
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 16px;
+  font-family: var(--font-body);
+  font-size: var(--app-font-size);
   line-height: var(--app-line-height);
+}
+
+.reading-comfort--comfort {
+  --app-font-size: 17px;
+  --app-line-height: 1.72;
+  --app-gap: 1.18rem;
+}
+
+.reading-comfort--hyperlegible {
+  --font-body: "Atkinson Hyperlegible", AtkinsonHyperlegible, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.reading-comfort--dyslexia {
+  --font-body: "OpenDyslexicRegular", "Open Dyslexic", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-line-height: 1.7;
 }
 
 .page-frame {
@@ -207,6 +224,21 @@ body,
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.7rem;
+}
+
+.reading-comfort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.reading-comfort__select {
+  min-width: 9.5rem;
+  min-height: 2.65rem;
+  padding-block: 0.6rem;
 }
 
 .tool-picker {
@@ -1185,6 +1217,14 @@ select.ui-input {
 
   .site-header__actions {
     justify-content: space-between;
+  }
+
+  .reading-comfort {
+    justify-content: space-between;
+  }
+
+  .reading-comfort__select {
+    min-width: 8rem;
   }
 
   .tool-selector {
