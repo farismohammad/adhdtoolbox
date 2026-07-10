@@ -1190,29 +1190,43 @@ select.ui-input {
 }
 
 @media (max-width: 42rem) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+  }
+
   .page-frame {
     width: min(100% - 1rem, 62rem);
   }
 
   body {
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .app-shell {
-    height: 100dvh;
+    display: block;
+    height: auto;
     min-height: 100dvh;
+    overflow: visible;
   }
 
   .app-main {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
     gap: 0.8rem;
-    padding: 0.75rem 0 0.9rem;
+    min-height: auto;
+    padding: 0.75rem 0 max(1rem, env(safe-area-inset-bottom));
+    overflow: visible;
   }
 
   .site-header__inner {
     align-items: stretch;
     flex-direction: column;
+    gap: 0.7rem;
+    padding: 0.75rem 0;
   }
 
   .site-header__actions {
@@ -1225,6 +1239,10 @@ select.ui-input {
 
   .reading-comfort__select {
     min-width: 8rem;
+  }
+
+  .privacy-note {
+    display: none;
   }
 
   .tool-selector {
@@ -1253,6 +1271,7 @@ select.ui-input {
   .tool-picker {
     gap: 0.7rem;
     padding: 0.75rem;
+    overflow: visible;
   }
 
   .tool-picker__intro {
@@ -1265,6 +1284,28 @@ select.ui-input {
 
   .active-tool__panel {
     padding: 0.95rem;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .active-tool,
+  .active-tool__body,
+  .focus-timer-panel,
+  .read-aloud-panel,
+  .tiny-todo-panel,
+  .time-tracker-panel {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .active-tool__body,
+  .focus-timer-panel,
+  .read-aloud-panel,
+  .tiny-todo-panel,
+  .time-tracker-panel {
+    grid-template-rows: none;
   }
 
   .active-tool__header h2 {
@@ -1296,6 +1337,10 @@ select.ui-input {
     min-height: 14rem;
   }
 
+  .read-aloud-panel__editor {
+    overflow: visible;
+  }
+
   .read-aloud-panel__textarea {
     min-height: 12rem;
     resize: vertical;
@@ -1312,7 +1357,7 @@ select.ui-input {
 
   .todo-main-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
 
   .tiny-todo-focus,
@@ -1322,6 +1367,7 @@ select.ui-input {
   }
 
   .task-list-body {
+    overflow: visible;
     padding-bottom: 0.9rem;
     scroll-padding-bottom: 0.9rem;
   }
@@ -1334,7 +1380,7 @@ select.ui-input {
 
   .ui-button,
   .tool-button {
-    min-height: 2.42rem;
+    min-height: 2.75rem;
     padding: 0.48rem 0.8rem;
   }
 
@@ -1355,11 +1401,40 @@ select.ui-input {
     width: 100%;
     justify-content: flex-start;
   }
+
+  .task-row__content strong,
+  .tracker-session__header strong,
+  .active-tool__header,
+  .empty-state,
+  .read-aloud-panel__health p {
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 34rem) {
+  .brand-mark__meta {
+    font-size: 0.82rem;
+  }
+
   .tool-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tool-selector__button {
+    min-height: 3.5rem;
+  }
+
+  .active-tool__header p {
+    font-size: 0.9rem;
+  }
+
+  .control-row > .ui-button:not(.ui-button--chip),
+  .tool-control-row > .tool-button:not(.tool-button--chip) {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .read-aloud-panel__primary-action {
+    min-width: 0;
   }
 }
 
