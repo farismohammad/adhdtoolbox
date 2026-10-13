@@ -1,37 +1,50 @@
-# ADHDToolbox
+# ADHD Toolbox
 
-ADHDToolbox is a lightweight frontend with practical tools for reading support, focus timers, starter tasks, and time tracking.
+A lightweight web application with practical tools for reading support, focus, starter tasks, and time tracking. Built with React, TypeScript, and Vite, with a Docker/Nginx deployment option.
 
-- `apps/web`: Vite + React + TypeScript frontend
-- `docs`: project notes and design-system documentation
+## Tools
 
-## Requirements
-
-- Node.js with `npm`
+- **Read Aloud:** listen to pasted text with voice, rate, pitch, and playback controls.
+- **Focus Timer:** keep a focus session in view.
+- **Tiny Todo:** capture a task and make it small enough to start.
+- **Time Tracker:** track what you are doing.
+- **Reading comfort:** switch between standard, comfort, hyperlegible, and dyslexia font options.
 
 ## Run locally
 
-Install workspace dependencies from the repository root:
+Use a Node.js version compatible with the Vite 7 dependency: Node.js 20.19+ or 22.12+. Install from the repository root:
 
 ```bash
-npm install
-```
-
-Start the web app:
-
-```bash
+npm ci
 npm run dev
 ```
 
-Build or lint it:
+Open the local URL printed by Vite. To build, lint, or preview the production build:
 
 ```bash
 npm run build:web
 npm run lint:web
+npm run preview:web
 ```
 
-## Read Aloud
+## Docker deployment
 
-Read Aloud uses your browser’s built-in speech engine. The app does not send text to a TTS server and does not create downloadable audio files.
+With Docker and Docker Compose installed, run from the repository root:
 
-Voice availability varies by browser and operating system. The voice list shows voices in the reader's language and English, with on-device voices first. Some browsers also offer online voices (for example Chrome's "Google" voices); these are marked "online" in the list because the browser sends the text to its provider to speak it. If no voices are reported, playback uses the browser's default voice.
+```bash
+docker compose up --build
+```
+
+Open http://localhost:3000. The multi-stage Dockerfile builds the frontend and serves the static output with Nginx. This repository does not require a separate application API for these tools.
+
+## Project structure
+
+- [`apps/web`](apps/web): React + TypeScript frontend, tool panels, and state hooks.
+- [`docker/nginx/web.conf`](docker/nginx/web.conf): static-site server configuration.
+- [`docs/design-system.md`](docs/design-system.md): design-system notes.
+
+## Read Aloud compatibility
+
+Read Aloud uses the browser's speech-synthesis API rather than an application TTS server and does not create downloadable audio files. Speech-engine behavior depends on the browser and operating system.
+
+The voice list shows voices in the reader's language and English, with on-device voices first. Some browsers also offer online voices (for example Chrome's "Google" voices); these are marked "online" in the list because the browser sends the text to its provider to speak it. If no voices are reported, playback uses the browser's default voice. Rate, pitch, pause, resume, and stop controls are provided, and the chosen voice and rate are remembered in the browser.
