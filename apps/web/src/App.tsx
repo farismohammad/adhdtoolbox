@@ -9,6 +9,7 @@ import { TinyTodoPanel } from './components/TinyTodoPanel'
 
 const DEFAULT_TOOL: ToolId = 'focus-timer'
 const READING_COMFORT_STORAGE_KEY = 'adhdtoolbox.readingComfort'
+const LAST_TOOL_STORAGE_KEY = 'adhdtoolbox.lastTool'
 
 type ReadingComfort = 'standard' | 'comfort' | 'hyperlegible' | 'dyslexia'
 type ToolId = 'read-aloud' | 'focus-timer' | 'tiny-todo' | 'time-tracker'
@@ -66,6 +67,21 @@ function isReadingComfort(value: unknown): value is ReadingComfort {
     value === 'hyperlegible' ||
     value === 'dyslexia'
   )
+}
+
+function isToolId(value: unknown): value is ToolId {
+  return toolDefinitions.some((tool) => tool.id === value)
+}
+
+function getToolFromHash() {
+  const hashValue = window.location.hash.slice(1)
+
+  return isToolId(hashValue) ? hashValue : null
+}
+
+// A link like /#tiny-todo opens that tool; otherwise reopen the last tool used.
+function getInitialTool() {
+  return getToolFromHash() ?? readLocalStorageJSON(LAST_TOOL_STORAGE_KEY, DEFAULT_TOOL, isToolId)
 }
 
 function getInitialReadingComfort() {
@@ -164,7 +180,10 @@ type ReadingComfortSelectorProps = {
 function ReadingComfortSelector({ value, onChange }: ReadingComfortSelectorProps) {
   return (
     <label className="reading-comfort">
-      <span>Reading comfort</span>
+      <span className="reading-comfort__label">Reading comfort</span>
+      <span aria-hidden="true" className="reading-comfort__short-label">
+        Aa
+      </span>
       <select
         aria-label="Reading comfort"
         className="ui-input reading-comfort__select"
@@ -188,12 +207,49 @@ function ReadingComfortSelector({ value, onChange }: ReadingComfortSelectorProps
 }
 
 export default function App() {
-  const [selectedTool, setSelectedTool] = useState<ToolId>(DEFAULT_TOOL)
+  const [selectedTool, setSelectedTool] = useState<ToolId>(getInitialTool)
   const [readingComfort, setReadingComfort] = useState(getInitialReadingComfort)
 
   useEffect(() => {
     writeLocalStorageJSON(READING_COMFORT_STORAGE_KEY, readingComfort)
   }, [readingComfort])
+
+  useEffect(() => {
+    writeLocalStorageJSON(LAST_TOOL_STORAGE_KEY, selectedTool)
+  }, [selectedTool])
+
+  // Keep the URL in step with the open tool so it can be bookmarked and the
+  // browser's Back button returns to the previous tool.
+  useEffect(() => {
+    if (!getToolFromHash()) {
+      window.history.replaceState(null, '', `#${selectedTool}`)
+    }
+
+    function handleHashChange() {
+      const toolFromHash = getToolFromHash()
+
+      if (toolFromHash) {
+        setSelectedTool(toolFromHash)
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+    // Only the initial tool needs writing to the URL; later changes push entries.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function selectTool(toolId: ToolId) {
+    if (toolId === selectedTool) {
+      return
+    }
+
+    window.history.pushState(null, '', `#${toolId}`)
+    setSelectedTool(toolId)
+  }
 
   return (
     <div className={`app-shell reading-comfort--${readingComfort}`} id="top">
@@ -215,7 +271,7 @@ export default function App() {
             </p>
           </div>
           <ToolSelector
-            onSelectTool={setSelectedTool}
+            onSelectTool={selectTool}
             selectedTool={selectedTool}
             tools={toolDefinitions}
           />

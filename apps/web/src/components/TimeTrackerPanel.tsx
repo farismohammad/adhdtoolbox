@@ -1,6 +1,14 @@
+import type { KeyboardEvent } from 'react'
+
 import { clipDurationToLocalDay, formatLocalDayDuration } from '../time'
+import { useDocumentTitlePart } from '../hooks/useDocumentTitle'
 import { TIME_TRACKER_QUICK_LABELS, useTimeTracker, type TimeSession } from '../hooks/useTimeTracker'
 import { Button } from './Button'
+
+const clockFormat = new Intl.DateTimeFormat(undefined, {
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 function getSessionDurationForToday(session: TimeSession, nowMs: number) {
   const startedAtMs = new Date(session.startedAt).getTime()
@@ -10,10 +18,18 @@ function getSessionDurationForToday(session: TimeSession, nowMs: number) {
 }
 
 function formatClock(dateIso: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(dateIso))
+  return clockFormat.format(new Date(dateIso))
+}
+
+function formatTimeRange(startIso: string, endIso: string) {
+  const start = new Date(startIso)
+  const end = new Date(endIso)
+
+  try {
+    return clockFormat.formatRange(start, end)
+  } catch {
+    return `${clockFormat.format(start)} – ${clockFormat.format(end)}`
+  }
 }
 
 export function TimeTrackerPanel() {
@@ -22,6 +38,7 @@ export function TimeTrackerPanel() {
     canReset,
     canStart,
     canStop,
+    deleteSession,
     labelInput,
     nowMs,
     sessions,
@@ -47,6 +64,21 @@ export function TimeTrackerPanel() {
     ? nowMs - new Date(activeSession.startedAt).getTime()
     : 0
 
+  useDocumentTitlePart(
+    activeSession
+      ? `⏱ ${formatLocalDayDuration(activeDurationMs)} ${activeSession.label || 'Tracking'}`
+      : null,
+  )
+
+  function handleLabelKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+    startSession()
+  }
+
   return (
     <div className="time-tracker-panel section-stack">
       <div className="time-tracker-panel__composer section-stack tool-input-group">
@@ -54,24 +86,34 @@ export function TimeTrackerPanel() {
           <span className="field__label">Optional label</span>
           <input
             className="ui-input"
+            enterKeyHint="go"
             onChange={(event) => setLabelInput(event.target.value)}
-            placeholder="What are you about to spend time on?"
+            onKeyDown={handleLabelKeyDown}
+            placeholder="What are you working on?"
             value={labelInput}
           />
         </label>
 
-        <div className="control-row tool-control-row time-tracker-panel__controls" aria-label="Quick labels">
-          {TIME_TRACKER_QUICK_LABELS.map((label) => (
-            <Button key={label} disabled={!canStart} onClick={() => startSession(label)} variant="chip">
-              {label}
+        <div className="time-tracker-panel__action-bar">
+          <div className="time-tracker-panel__quick" role="group" aria-labelledby="quick-start-label">
+            <span className="time-tracker-panel__quick-label" id="quick-start-label">
+              Quick start
+            </span>
+            {TIME_TRACKER_QUICK_LABELS.map((label) => (
+              <Button key={label} disabled={!canStart} onClick={() => startSession(label)} variant="chip">
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="control-row tool-control-row time-tracker-panel__controls" role="group" aria-label="Tracking controls">
+            <Button disabled={!canStart} onClick={() => startSession()} variant="primary">
+              Start
             </Button>
-          ))}
-          <Button disabled={!canStart} onClick={() => startSession()} variant="primary">
-            Start
-          </Button>
-          <Button disabled={!canStop} onClick={stopSession}>
-            Stop
-          </Button>
+            <Button disabled={!canStop} onClick={stopSession}>
+              Stop
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -91,8 +133,9 @@ export function TimeTrackerPanel() {
                 <span className="tracker-session__badge">Tracking</span>
               </div>
               <div className="tracker-session__meta">
-                <span>Started {formatClock(activeSession.startedAt)}</span>
-                <span>{formatLocalDayDuration(activeDurationMs)} elapsed</span>
+                <span>
+                  Started {formatClock(activeSession.startedAt)} · {formatLocalDayDuration(activeDurationMs)} elapsed
+                </span>
               </div>
             </div>
           ) : (
@@ -120,8 +163,19 @@ export function TimeTrackerPanel() {
                     <span>{formatLocalDayDuration(session.todayDurationMs)}</span>
                   </div>
                   <div className="tracker-session__meta">
-                    <span>{formatClock(session.startedAt)}</span>
-                    <span>{session.endedAt ? formatClock(session.endedAt) : 'Now'}</span>
+                    <span>
+                      {session.endedAt
+                        ? formatTimeRange(session.startedAt, session.endedAt)
+                        : `${formatClock(session.startedAt)} – now`}
+                    </span>
+                    <Button
+                      aria-label={`Delete ${session.label || 'unlabeled'} session from ${formatClock(session.startedAt)}`}
+                      className="tracker-session__delete"
+                      onClick={() => deleteSession(session.id)}
+                      variant="chip"
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </li>
               ))}
