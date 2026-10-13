@@ -3,9 +3,18 @@ import { useEffect, useRef, useState } from 'react'
 import { readLocalStorageJSON, writeLocalStorageJSON } from '../browserStorage'
 import { useCountdown, type TimerStatus } from './useCountdown'
 import { playGentleChime } from './timerAudio'
+import {
+  canUseNotifications,
+  hasNotificationPermission,
+  requestNotificationPermission,
+  showTimeUpNotification,
+} from './timerNotifications'
 
 const STORAGE_KEY = 'adhdtoolbox.tasks'
 const SOUND_STORAGE_KEY = 'adhdtoolbox.tasks.soundEnabled'
+const NOTIFY_STORAGE_KEY = 'adhdtoolbox.tasks.notifyEnabled'
+const ACTIVE_TASK_STORAGE_KEY = 'adhdtoolbox.tasks.activeTaskId'
+const TIMER_STORAGE_KEY = 'adhdtoolbox.tasks.timer'
 const ONE_MINUTE_MS = 60 * 1000
 const DEFAULT_IDLE_DURATION_MS = 5 * ONE_MINUTE_MS
 
@@ -52,24 +61,64 @@ function getInitialSoundEnabled() {
   })
 }
 
+function getInitialActiveTaskId(tasks: Task[]) {
+  const storedTaskId = readLocalStorageJSON<string | null>(
+    ACTIVE_TASK_STORAGE_KEY,
+    null,
+    (value): value is string => typeof value === 'string',
+  )
+  const isValid = tasks.some((task) => task.id === storedTaskId && !task.completed)
+
+  if (!isValid) {
+    // Drop a saved timer that no longer belongs to an open task.
+    writeLocalStorageJSON(TIMER_STORAGE_KEY, null)
+    return null
+  }
+
+  return storedTaskId
+}
+
+function getInitialNotifyEnabled() {
+  return (
+    readLocalStorageJSON(NOTIFY_STORAGE_KEY, false, (value): value is boolean => {
+      return typeof value === 'boolean'
+    }) && hasNotificationPermission()
+  )
+}
+
 export function useTinyTodo() {
   const [tasks, setTasks] = useState<Task[]>(getInitialTasks)
   const [titleInput, setTitleInput] = useState('')
   const [selectedDurationMinutes, setSelectedDurationMinutes] = useState<number | null>(null)
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(() =>
+    getInitialActiveTaskId(tasks),
+  )
   const [soundEnabled, setSoundEnabled] = useState(getInitialSoundEnabled)
+  const [notifyEnabled, setNotifyEnabled] = useState(getInitialNotifyEnabled)
   const soundEnabledRef = useRef(soundEnabled)
+  const notifyEnabledRef = useRef(notifyEnabled)
+  const activeTaskTitleRef = useRef<string | null>(null)
 
   const countdown = useCountdown({
     durationMs: DEFAULT_IDLE_DURATION_MS,
+    storageKey: TIMER_STORAGE_KEY,
     onComplete: () => {
       if (soundEnabledRef.current) {
         void playGentleChime()
+      }
+
+      if (notifyEnabledRef.current) {
+        showTimeUpNotification(
+          activeTaskTitleRef.current
+            ? `Timer finished for “${activeTaskTitleRef.current}”.`
+            : 'Your task timer is finished.',
+        )
       }
     },
   })
 
   soundEnabledRef.current = soundEnabled
+  notifyEnabledRef.current = notifyEnabled
 
   useEffect(() => {
     writeLocalStorageJSON(STORAGE_KEY, tasks)
@@ -79,7 +128,17 @@ export function useTinyTodo() {
     writeLocalStorageJSON(SOUND_STORAGE_KEY, soundEnabled)
   }, [soundEnabled])
 
+  useEffect(() => {
+    writeLocalStorageJSON(NOTIFY_STORAGE_KEY, notifyEnabled)
+  }, [notifyEnabled])
+
+  useEffect(() => {
+    writeLocalStorageJSON(ACTIVE_TASK_STORAGE_KEY, activeTaskId)
+  }, [activeTaskId])
+
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? null
+
+  activeTaskTitleRef.current = activeTask?.title ?? null
   const activeTaskDurationMs = activeTask?.durationMinutes
     ? activeTask.durationMinutes * ONE_MINUTE_MS
     : null
@@ -95,6 +154,15 @@ export function useTinyTodo() {
 
   function toggleSoundWhenDone(nextValue: boolean) {
     setSoundEnabled(nextValue)
+  }
+
+  async function toggleNotifyWhenDone(nextValue: boolean) {
+    if (!nextValue) {
+      setNotifyEnabled(false)
+      return
+    }
+
+    setNotifyEnabled(await requestNotificationPermission())
   }
 
   function addTask() {
@@ -218,6 +286,7 @@ export function useTinyTodo() {
     addFiveMinutes,
     addTask,
     canAddTime: activeTaskDurationMs !== null && countdown.canAddTime,
+    canNotify: canUseNotifications(),
     canPause: activeTaskDurationMs !== null && countdown.canPause,
     canRestart: activeTaskDurationMs !== null,
     canResume: activeTaskDurationMs !== null && countdown.canResume,
@@ -237,7 +306,9 @@ export function useTinyTodo() {
     deleteTask,
     formattedTime: countdown.formattedTime,
     hasCompletedTasks: tasks.some((task) => task.completed),
+    notifyEnabled,
     pauseActiveTask,
+    progress: countdown.progress,
     resetActiveTask,
     restartActiveTaskTimer,
     resumeActiveTask,
@@ -260,6 +331,7 @@ export function useTinyTodo() {
     tasks,
     titleInput,
     toggleSelectedDuration,
+    toggleNotifyWhenDone,
     toggleSoundWhenDone,
     toggleTask,
   }

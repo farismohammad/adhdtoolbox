@@ -100,6 +100,11 @@ export function useTimeTracker() {
     )
   }
 
+  function deleteSession(sessionId: string) {
+    setNowMs(Date.now())
+    setSessions((currentSessions) => currentSessions.filter((session) => session.id !== sessionId))
+  }
+
   function resetSessions() {
     if (typeof window !== 'undefined') {
       const shouldReset = window.confirm(
@@ -123,6 +128,7 @@ export function useTimeTracker() {
     canReset: sessions.length > 0,
     canStart: activeSession === null,
     canStop: activeSession !== null,
+    deleteSession,
     labelInput,
     nowMs,
     sessions,
