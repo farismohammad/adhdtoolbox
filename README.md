@@ -48,3 +48,7 @@ Open http://localhost:3000. The multi-stage Dockerfile builds the frontend and s
 Read Aloud uses the browser's speech-synthesis API rather than an application TTS server and does not create downloadable audio files. Speech-engine behavior depends on the browser and operating system.
 
 The voice list shows voices in the reader's language and English, with on-device voices first. Some browsers also offer online voices (for example Chrome's "Google" voices); these are marked "online" in the list because the browser sends the text to its provider to speak it. If no voices are reported, playback uses the browser's default voice. Rate, pitch, pause, resume, and stop controls are provided, and the chosen voice and rate are remembered in the browser.
+
+## License
+
+[Apache-2.0](LICENSE). Third-party dependencies keep their own licenses.
